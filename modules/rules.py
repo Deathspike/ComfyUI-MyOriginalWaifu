@@ -6,6 +6,10 @@ from .tags import TagList
 
 
 class ConditionRule(ABC):
+    """
+    Base rule that supports `any_of`, `all_of` and `none_of` conditions.
+    """
+
     @abstractmethod
     def __init__(self, context: Context, rule: dict[object, object]):
         self.any_of = None
@@ -24,7 +28,6 @@ class ConditionRule(ABC):
             elif key not in {"name", "type"}:
                 self._handle_property(context, key, value)
 
-    @abstractmethod
     def _handle_property(self, context: Context, key: str, value: object) -> None:
         context.fail_prop(key, f"'{key}' property is not supported")
 
@@ -42,6 +45,10 @@ class ConditionRule(ABC):
 
 
 class GroupRule(ConditionRule):
+    """
+    Structural rule that runs *all* rules in `children` whose conditions match.
+    """
+
     def __init__(self, context: Context, rule: dict[object, object]):
         if "children" not in rule:
             context.fail("children property is required")
@@ -62,6 +69,10 @@ class GroupRule(ConditionRule):
 
 
 class SwitchRule(ConditionRule):
+    """
+    Structural rule that runs the *first* rule in `children` whose conditions match, or the *default* rule.
+    """
+
     def __init__(self, context: Context, rule: dict[object, object]):
         if "children" not in rule:
             context.fail("children property is required")
@@ -81,6 +92,7 @@ class SwitchRule(ConditionRule):
             default_index: Optional[int] = None
             rules: list[object] = []
 
+            # Parse child rules and resolve the optional default rule.
             for index, rule in enumerate(children):
                 if not Typing.is_dict(rule):
                     context.fail_rule(index, "rule must be a dict")
@@ -102,11 +114,16 @@ class SwitchRule(ConditionRule):
                         copy.pop("default", None)
                         rules.append(copy)
 
+            # Parse child rules into rule objects.
             children = UnionRuleList(context, rules)
             return children, default_index
 
 
 class TagRule(ConditionRule):
+    """
+    Leaf rule that supports `add`, `add_negative`, `remove` and `remove_negative` modifications.
+    """
+
     def __init__(self, context: Context, rule: dict[object, object]):
         if not {"add", "add_negative", "remove", "remove_negative"} & rule.keys():
             context.fail("a tag property is required")
@@ -131,6 +148,10 @@ class TagRule(ConditionRule):
 
 
 class UnionRuleList(list[GroupRule | SwitchRule | TagRule]):
+    """
+    Typed list of parsed `GroupRule`, `SwitchRule` and `TagRule` rules.
+    """
+
     def __init__(self, context: Context, rules: list[object] | tuple[object]):
         super().__init__(self._parse(context, rules))
 
