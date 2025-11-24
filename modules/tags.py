@@ -9,7 +9,7 @@ class Tag:
 
 class TagList(list[Tag]):
     def __init__(self, tags: list[object] | tuple[object] | str):
-        self.extend(self._parse(tags))
+        super().__init__(self._parse(tags))
 
     def _parse(self, tags: list[object] | tuple[object] | str):
         if not isinstance(tags, str):

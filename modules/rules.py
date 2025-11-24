@@ -132,7 +132,7 @@ class TagRule(ConditionRule):
 
 class UnionRuleList(list[GroupRule | SwitchRule | TagRule]):
     def __init__(self, context: Context, rules: list[object] | tuple[object]):
-        self.extend(self._parse(context, rules))
+        super().__init__(self._parse(context, rules))
 
     def _parse(self, context: Context, rules: list[object] | tuple[object]):
         result: list[GroupRule | SwitchRule | TagRule] = []
