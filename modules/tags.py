@@ -6,6 +6,14 @@ class Tag:
         self.name = name
         self.weight = weight
 
+    def __eq__(self, value: object):
+        if isinstance(value, Tag):
+            return value.name == self.name
+        elif isinstance(value, str):
+            return value == self.name
+        else:
+            return False
+
 
 class TagList(list[Tag]):
     def __init__(self, tags: list[object] | tuple[object] | str):
