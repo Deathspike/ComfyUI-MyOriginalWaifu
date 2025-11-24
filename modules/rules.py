@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from typing import Optional
 from .utils.typing import Typing
 from .core import Context
 from .tags import TagList
@@ -11,12 +10,13 @@ class ConditionRule(ABC):
     """
 
     @abstractmethod
-    def __init__(self, context: Context, rule: dict[object, object]):
+    def __init__(self, context: Context, name: str | None, node: dict[object, object]):
+        self.name = name
         self.any_of = None
         self.all_of = None
         self.none_of = None
 
-        for key, value in rule.items():
+        for key, value in node.items():
             if not isinstance(key, str):
                 context.fail("property names must be strings")
             elif key == "any_of":
@@ -49,11 +49,11 @@ class GroupRule(ConditionRule):
     Structural rule that runs *all* rules in `children` whose conditions match.
     """
 
-    def __init__(self, context: Context, rule: dict[object, object]):
-        if "children" not in rule:
+    def __init__(self, context: Context, name: str | None, node: dict[object, object]):
+        if "children" not in node:
             context.fail("children property is required")
         else:
-            super().__init__(context, rule)
+            super().__init__(context, name, node)
 
     def _handle_property(self, context: Context, key: str, value: object):
         if key == "children":
@@ -73,11 +73,11 @@ class SwitchRule(ConditionRule):
     Structural rule that runs the *first* rule in `children` whose conditions match, or the *default* rule.
     """
 
-    def __init__(self, context: Context, rule: dict[object, object]):
-        if "children" not in rule:
+    def __init__(self, context: Context, name: str | None, node: dict[object, object]):
+        if "children" not in node:
             context.fail("children property is required")
         else:
-            super().__init__(context, rule)
+            super().__init__(context, name, node)
 
     def _handle_property(self, context: Context, key: str, value: object):
         if key == "children":
@@ -89,33 +89,33 @@ class SwitchRule(ConditionRule):
         if not Typing.is_list(children):
             context.fail_prop("children", "children must be a list")
         with context.enter_prop("children"):
-            default_index: Optional[int] = None
-            rules: list[object] = []
+            default_index: int | None = None
+            nodes: list[object] = []
 
-            # Parse child rules and resolve the optional default rule.
-            for index, rule in enumerate(children):
-                if not Typing.is_dict(rule):
-                    context.fail_rule(index, "rule must be a dict")
-                with context.enter_rule(index, rule):
-                    default = rule.get("default", None)
+            # Parse child nodes and resolve the optional default node.
+            for index, node in enumerate(children):
+                if not Typing.is_dict(node):
+                    context.fail_node(index, "rule must be a dict")
+                with context.enter_node(index, node):
+                    default = node.get("default", None)
                     if default is None:
-                        rules.append(rule)
+                        nodes.append(node)
                     elif not isinstance(default, bool):
                         context.fail_prop("default", "default must be a bool")
                     elif default is not True:
                         context.fail_prop("default", "default must be true")
                     elif default_index is not None:
                         context.fail("default rule is already in use")
-                    elif {"any_of", "all_of", "none_of"} & rule.keys():
+                    elif {"any_of", "all_of", "none_of"} & node.keys():
                         context.fail("default rule cannot contain conditions")
                     else:
                         default_index = index
-                        copy = rule.copy()
+                        copy = node.copy()
                         copy.pop("default", None)
-                        rules.append(copy)
+                        nodes.append(copy)
 
-            # Parse child rules into rule objects.
-            children = UnionRuleList(context, rules)
+            # Parse child nodes into rules.
+            children = UnionRuleList(context, nodes)
             return children, default_index
 
 
@@ -124,15 +124,15 @@ class TagRule(ConditionRule):
     Leaf rule that supports `add`, `add_negative`, `remove` and `remove_negative` modifications.
     """
 
-    def __init__(self, context: Context, rule: dict[object, object]):
-        if not {"add", "add_negative", "remove", "remove_negative"} & rule.keys():
+    def __init__(self, context: Context, name: str | None, node: dict[object, object]):
+        if not {"add", "add_negative", "remove", "remove_negative"} & node.keys():
             context.fail("a tag property is required")
         else:
             self.add = None
             self.add_negative = None
             self.remove = None
             self.remove_negative = None
-            super().__init__(context, rule)
+            super().__init__(context, name, node)
 
     def _handle_property(self, context: Context, key: str, value: object):
         if key == "add":
@@ -152,27 +152,24 @@ class UnionRuleList(list[GroupRule | SwitchRule | TagRule]):
     Typed list of parsed `GroupRule`, `SwitchRule` and `TagRule` rules.
     """
 
-    def __init__(self, context: Context, rules: list[object] | tuple[object]):
-        super().__init__(self._parse(context, rules))
+    def __init__(self, context: Context, nodes: list[object] | tuple[object]):
+        super().__init__(self._parse(context, nodes))
 
-    def _parse(self, context: Context, rules: list[object] | tuple[object]):
+    def _parse(self, context: Context, nodes: list[object] | tuple[object]):
         result: list[GroupRule | SwitchRule | TagRule] = []
 
-        for index, rule in enumerate(rules):
-            if not Typing.is_dict(rule):
-                context.fail_rule(index, "rule must be a dict")
-            with context.enter_rule(index, rule):
-                result.append(self._parse_rule(context, rule))
+        for index, node in enumerate(nodes):
+            if not Typing.is_dict(node):
+                context.fail_node(index, "rule must be a dict")
+            with context.enter_node(index, node) as name:
+                type = node.get("type")
+                if type is None:
+                    result.append(TagRule(context, name, node))
+                elif type == "group":
+                    result.append(GroupRule(context, name, node))
+                elif type == "switch":
+                    result.append(SwitchRule(context, name, node))
+                else:
+                    context.fail_prop("type", f"'{type}' type is not supported")
 
         return result
-
-    def _parse_rule(self, context: Context, rule: dict[object, object]):
-        type = rule.get("type")
-        if type is None:
-            return TagRule(context, rule)
-        elif type == "group":
-            return GroupRule(context, rule)
-        elif type == "switch":
-            return SwitchRule(context, rule)
-        else:
-            context.fail_prop("type", f"'{type}' type is not supported")
