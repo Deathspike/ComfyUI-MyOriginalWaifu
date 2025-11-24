@@ -123,9 +123,9 @@ class TagRule(ConditionRule):
         elif key == "add_negative":
             self.add_negative = self._parse_tags(context, key, value, True)
         elif key == "remove":
-            self.remove = self._parse_tags(context, key, value, True)
+            self.remove = self._parse_tags(context, key, value, False)
         elif key == "remove_negative":
-            self.remove_negative = self._parse_tags(context, key, value, True)
+            self.remove_negative = self._parse_tags(context, key, value, False)
         else:
             super()._handle_property(context, key, value)
 
