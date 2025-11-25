@@ -16,6 +16,7 @@ class ConditionRule(ABC):
         self.all_of = None
         self.none_of = None
 
+        # Parse node properties.
         for key, value in node.items():
             if not isinstance(key, str):
                 context.fail("property names must be strings")
@@ -27,6 +28,13 @@ class ConditionRule(ABC):
                 self.none_of = self._parse_tags(context, key, value, False)
             elif key not in {"name", "type"}:
                 self._handle_property(context, key, value)
+
+        # Validate contradictions.
+        if self.none_of:
+            if self.any_of and any(tag in self.any_of for tag in self.none_of):
+                context.fail_prop("none_of", "none_of cannot conflict with any_of")
+            elif self.all_of and any(tag in self.all_of for tag in self.none_of):
+                context.fail_prop("none_of", "none_of cannot conflict with all_of")
 
     def _handle_property(self, context: Context, key: str, value: object) -> None:
         context.fail_prop(key, f"'{key}' property is not supported")
