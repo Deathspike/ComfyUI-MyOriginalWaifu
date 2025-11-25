@@ -93,6 +93,9 @@ class SwitchRule(ConditionRule):
         else:
             super()._handle_property(context, key, value)
 
+    def _has_conditions(self, node: dict[object, object]):
+        return {"any_of", "all_of", "none_of"} & node.keys()
+
     def _parse_children(self, context: Context, children: object):
         if not Typing.is_list(children):
             context.fail_prop("children", "children must be a list")
@@ -107,14 +110,14 @@ class SwitchRule(ConditionRule):
                 with context.enter_node(index, node):
                     default = node.get("default", None)
                     if default is None:
-                        nodes.append(node)
+                        nodes.append(self._validate_conditions(context, node))
                     elif not isinstance(default, bool):
                         context.fail_prop("default", "default must be a bool")
                     elif default is not True:
                         context.fail_prop("default", "default must be true")
                     elif default_index is not None:
                         context.fail("default rule is already in use")
-                    elif {"any_of", "all_of", "none_of"} & node.keys():
+                    elif self._has_conditions(node):
                         context.fail("default rule cannot contain conditions")
                     else:
                         default_index = index
@@ -125,6 +128,12 @@ class SwitchRule(ConditionRule):
             # Parse child nodes into rules.
             children = UnionRuleList(context, nodes)
             return children, default_index
+
+    def _validate_conditions(self, context: Context, node: dict[object, object]):
+        if not self._has_conditions(node):
+            context.fail("branch rule cannot omit conditions")
+        else:
+            return node
 
 
 class TagRule(ConditionRule):
