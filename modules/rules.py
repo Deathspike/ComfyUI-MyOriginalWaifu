@@ -78,7 +78,7 @@ class GroupRule(ConditionRule):
 
 class SwitchRule(ConditionRule):
     """
-    Structural rule that runs the *first* rule in `children` whose conditions match, or the *default* rule.
+    Structural rule that runs the *first* rule in `children` whose conditions match, or the optional *default* rule.
     """
 
     def __init__(self, context: Context, name: str | None, node: dict[object, object]):
@@ -138,15 +138,17 @@ class SwitchRule(ConditionRule):
 
 class TagRule(ConditionRule):
     """
-    Leaf rule that supports `add`, `add_negative`, `remove` and `remove_negative` modifications.
+    Tag rule that supports `add`, `add_negative`, `anchor`, `anchor_negative`, `remove` and `remove_negative` mutations.
     """
 
     def __init__(self, context: Context, name: str | None, node: dict[object, object]):
-        if not {"add", "add_negative", "remove", "remove_negative"} & node.keys():
+        if not self.TAG_KEYS & node.keys():
             context.fail("a tag property is required")
         else:
             self.add = None
             self.add_negative = None
+            self.anchor = None
+            self.anchor_negative = None
             self.remove = None
             self.remove_negative = None
             super().__init__(context, name, node)
@@ -156,12 +158,25 @@ class TagRule(ConditionRule):
             self.add = self._parse_tags(context, key, value, True)
         elif key == "add_negative":
             self.add_negative = self._parse_tags(context, key, value, True)
+        elif key == "anchor":
+            self.anchor = self._parse_tags(context, key, value, False)
+        elif key == "anchor_negative":
+            self.anchor_negative = self._parse_tags(context, key, value, False)
         elif key == "remove":
             self.remove = self._parse_tags(context, key, value, False)
         elif key == "remove_negative":
             self.remove_negative = self._parse_tags(context, key, value, False)
         else:
             super()._handle_property(context, key, value)
+
+    TAG_KEYS = {
+        "add",
+        "add_negative",
+        "anchor",
+        "anchor_negative",
+        "remove",
+        "remove_negative",
+    }
 
 
 class UnionRuleList(list[GroupRule | SwitchRule | TagRule]):
