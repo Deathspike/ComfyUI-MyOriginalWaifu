@@ -2,7 +2,11 @@ from re import split
 
 
 class Tag:
-    def __init__(self, name: str, weight: float):
+    """
+    Tag with an optional weight modifier.
+    """
+
+    def __init__(self, name: str, weight: float = 1):
         self.name = name
         self.weight = weight
 
@@ -14,10 +18,20 @@ class Tag:
         else:
             return False
 
+    def __str__(self):
+        return self.name
+
 
 class TagList(list[Tag]):
+    """
+    Ordered list of `Tag` objects parsed from an input.
+    """
+
     def __init__(self, tags: list[object] | tuple[object] | str):
         super().__init__(self._parse(tags))
+
+    def __str__(self):
+        return ", ".join(tag.name for tag in self)
 
     def _parse(self, tags: list[object] | tuple[object] | str):
         if not isinstance(tags, str):
@@ -40,6 +54,6 @@ class TagList(list[Tag]):
         for tag in split(r"[,\n]", tags):
             clean_tag = tag.strip()
             if clean_tag:
-                result.append(Tag(clean_tag, 1))
+                result.append(Tag(clean_tag))
 
         return result
