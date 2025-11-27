@@ -66,14 +66,16 @@ class Auditor:
             self.fail(message)
 
 
-class ConditionRule(ABC):
+class BaseRule(ABC):
     """
-    Condition rule that supports `any_of`, `all_of` and `none_of`.
+    Base rule that supports anchors with `anchor` and `anchor_negative`, and conditions with `any_of`, `all_of` and `none_of`.
     """
 
     @abstractmethod
     def __init__(self, auditor: Auditor, name: str | None, node: dict[object, object]):
         self.name = name
+        self.anchor = None
+        self.anchor_negative = None
         self.any_of = None
         self.all_of = None
         self.none_of = None
@@ -82,6 +84,10 @@ class ConditionRule(ABC):
         for key, value in node.items():
             if not isinstance(key, str):
                 auditor.fail("property names must be strings")
+            elif key == "anchor":
+                self.anchor = self._parse_tags(auditor, key, value, False)
+            elif key == "anchor_negative":
+                self.anchor_negative = self._parse_tags(auditor, key, value, False)
             elif key == "any_of":
                 self.any_of = self._parse_tags(auditor, key, value, False)
             elif key == "all_of":
@@ -114,7 +120,7 @@ class ConditionRule(ABC):
                 return tags
 
 
-class GroupRule(ConditionRule):
+class GroupRule(BaseRule):
     """
     Group rule that runs *all* rules in `children` whose conditions match.
     """
@@ -138,7 +144,7 @@ class GroupRule(ConditionRule):
             return UnionRuleList(auditor, children)
 
 
-class SwitchRule(ConditionRule):
+class SwitchRule(BaseRule):
     """
     Switch rule that runs the *first* rule in `children` whose conditions match, or the optional *default* rule.
     """
@@ -198,19 +204,17 @@ class SwitchRule(ConditionRule):
             return node
 
 
-class TagRule(ConditionRule):
+class TagRule(BaseRule):
     """
-    Tag rule that supports `add`, `add_negative`, `anchor`, `anchor_negative`, `remove` and `remove_negative`.
+    Tag rule that supports mutations with `add`, `add_negative`, `remove` and `remove_negative`.
     """
 
     def __init__(self, auditor: Auditor, name: str | None, node: dict[object, object]):
-        if not self.TAG_KEYS & node.keys():
+        if not {"add", "add_negative", "remove", "remove_negative"} & node.keys():
             auditor.fail("a tag property is required")
         else:
             self.add = None
             self.add_negative = None
-            self.anchor = None
-            self.anchor_negative = None
             self.remove = None
             self.remove_negative = None
             super().__init__(auditor, name, node)
@@ -220,25 +224,12 @@ class TagRule(ConditionRule):
             self.add = self._parse_tags(auditor, key, value, True)
         elif key == "add_negative":
             self.add_negative = self._parse_tags(auditor, key, value, True)
-        elif key == "anchor":
-            self.anchor = self._parse_tags(auditor, key, value, False)
-        elif key == "anchor_negative":
-            self.anchor_negative = self._parse_tags(auditor, key, value, False)
         elif key == "remove":
             self.remove = self._parse_tags(auditor, key, value, False)
         elif key == "remove_negative":
             self.remove_negative = self._parse_tags(auditor, key, value, False)
         else:
             super()._handle_property(auditor, key, value)
-
-    TAG_KEYS = {
-        "add",
-        "add_negative",
-        "anchor",
-        "anchor_negative",
-        "remove",
-        "remove_negative",
-    }
 
 
 class UnionRuleList(list[GroupRule | SwitchRule | TagRule]):
