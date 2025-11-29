@@ -190,7 +190,7 @@ class SwitchRule(BaseRule):
                     else:
                         default_index = index
                         copy = node.copy()
-                        copy.pop("default", None)
+                        del copy["default"]
                         nodes.append(copy)
 
             # Parse child nodes into rules.
