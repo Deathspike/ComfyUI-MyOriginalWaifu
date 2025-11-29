@@ -7,14 +7,13 @@ class Tag:
     """
 
     def __init__(self, name: str, weight: float = 1):
+        self.enabled = True
         self.name = name
         self.weight = weight
 
     def __eq__(self, value: object):
         if isinstance(value, Tag):
             return value.name == self.name
-        elif isinstance(value, str):
-            return value == self.name
         else:
             return False
 
@@ -31,7 +30,7 @@ class TagList(list[Tag]):
         super().__init__(self._parse(tags))
 
     def __str__(self):
-        return ", ".join(tag.name for tag in self)
+        return ", ".join(tag.name for tag in self if tag.enabled and tag.weight)
 
     def _parse(self, tags: list[object] | tuple[object] | str):
         if not isinstance(tags, str):
