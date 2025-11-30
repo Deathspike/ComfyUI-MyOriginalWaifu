@@ -26,9 +26,8 @@ class Pipeline:
         return path.realpath(full_path)
 
     def _load_and_cache(self):
-        print(f"[ComfyUI-MyOriginalWaifu v{self._version}]")
-        print(f"→ loading {self._directory}")
         files = listdir(self._directory)
+        file_set = set(files)
 
         # Refresh the rules.
         for name in sorted(files):
@@ -37,12 +36,12 @@ class Pipeline:
                 file_stat = stat(file_path)
                 file_yaml = self._cache.get(name, None)
                 if not file_yaml or not file_yaml.validate(file_stat):
-                    print(f"→ caching {file_path}")
+                    print(f"→ loading {file_path}")
                     self._cache[name] = Tracker(file_path, file_stat)
 
         # Prune old rules from the cache.
         for name in list(self._cache.keys()):
-            if name not in files:
+            if name not in file_set:
                 print(f"→ pruning {path.join(self._directory, name)}")
                 del self._cache[name]
 
@@ -61,8 +60,12 @@ class Pipeline:
         return hash.hexdigest()
 
     def run(self, positive: Prompt, negative: Prompt):
-        self._load_and_cache()
         engine = Engine(positive, negative)
+
+        # Load the rule files.
+        print(f"[ComfyUI-MyOriginalWaifu v{self._version}]")
+        print(f"→ probing {self._directory}")
+        self._load_and_cache()
 
         # Run the rules on the engine.
         for file in sorted(self._cache.keys()):
