@@ -1,0 +1,14 @@
+[project]
+name = "comfyui-myoriginalwaifu"
+description = "Your Waifu. Your Rules. Your Perfect Prompt."
+version = "0.1.0"
+license = { file = "LICENSE" }
+dependencies  = []
+
+[project.urls]
+Repository = "https://github.com/Deathspike/ComfyUI-MyOriginalWaifu"
+
+[tool.comfy]
+PublisherId = "deathspike"
+DisplayName = "ComfyUI-MyOriginalWaifu"
+Icon = ""
