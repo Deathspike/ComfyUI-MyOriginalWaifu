@@ -101,7 +101,7 @@ class Engine:
                     if self._run(anchor, rule):
                         return
 
-        # Evaluate default branch.
+        # Evaluate the default branch.
         if default:
             with self._log.enter(f"default", default):
                 self._run(anchor, default)

@@ -12,7 +12,7 @@ from .utils.version import get_project_version
 
 class Pipeline:
     """
-    Pipeline that loads rule files, tracks changes, and runs them on prompts.
+    Pipeline that loads rule files, tracks changes, and applies rules to positive and negative prompts.
     """
 
     def __init__(self, directory: str | None = None):
@@ -78,7 +78,7 @@ class Pipeline:
 
 class Tracker:
     """
-    Tracker for a rule file that validates file state and runs rules.
+    Tracker for a rule file that validates the file state and runs rules.
     """
 
     def __init__(self, file_path: str, file_stat: stat_result):
