@@ -54,14 +54,14 @@ class Engine:
 
         # Determine the positive anchor.
         if rule.anchor:
-            match = (tag for tag in rule.anchor if tag in self._positive)
-            positive = next(match, None) or positive
+            matches = (tag for tag in rule.anchor if tag in self._positive)
+            positive = next(matches, None) or positive
             self._log.add("@", f"anchor({rule.anchor}) = {positive}")
 
         # Determine the negative anchor.
         if rule.anchor_negative:
-            match = (tag for tag in rule.anchor_negative if tag in self._negative)
-            negative = next(match, None) or negative
+            matches = (tag for tag in rule.anchor_negative if tag in self._negative)
+            negative = next(matches, None) or negative
             self._log.add("@", f"anchor_negative({rule.anchor_negative}) = {negative}")
 
         return Anchor(positive, negative)
@@ -123,8 +123,7 @@ class Engine:
             self._log.add("-", f"remove_negative: {rule.remove_negative}")
             self._negative.remove(rule.remove_negative)
 
-    def run(self, name: str, rules: UnionRuleList):
-        self._log.add("→", f"executing {name}")
+    def run(self, rules: UnionRuleList):
         for index, rule in enumerate(rules):
             with self._log.enter(f":root[{index}]", rule):
                 self._run(Anchor(None, None), rule)
