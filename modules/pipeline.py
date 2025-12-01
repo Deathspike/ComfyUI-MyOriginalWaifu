@@ -12,11 +12,11 @@ from .utils.version import get_project_version
 
 class Pipeline:
     """
-    Pipeline that loads rule files, tracks changes, and applies rules to positive and negative prompts.
+    Pipeline that loads rule files and runs the rules on prompts.
     """
 
     def __init__(self, directory: str | None = None):
-        self._cache: dict[str, Tracker] = {}
+        self._cache: dict[str, RuleFile] = {}
         self._directory = directory if directory else self._get_base_directory()
         self._version = get_project_version()
 
@@ -36,13 +36,11 @@ class Pipeline:
                 file_stat = stat(file_path)
                 file_yaml = self._cache.get(name, None)
                 if not file_yaml or not file_yaml.validate(file_stat):
-                    print(f"→ loading {file_path}")
-                    self._cache[name] = Tracker(file_path, file_stat)
+                    self._cache[name] = RuleFile(file_path, file_stat)
 
         # Prune old rules from the cache.
         for name in list(self._cache.keys()):
             if name not in file_set:
-                print(f"→ pruning {path.join(self._directory, name)}")
                 del self._cache[name]
 
     def get_cache_key(self, positive: str, negative: str):
@@ -54,7 +52,7 @@ class Pipeline:
             for key in self._cache[name].digest():
                 hash.update(key.encode("utf-8"))
 
-        # Digest the prompt.
+        # Digest the input prompt.
         hash.update(positive.encode("utf-8"))
         hash.update(negative.encode("utf-8"))
         return hash.hexdigest()
@@ -64,7 +62,7 @@ class Pipeline:
 
         # Load the rule files.
         print(f"[ComfyUI-MyOriginalWaifu v{self._version}]")
-        print(f"→ probing {self._directory}")
+        print(f"→ {self._directory}")
         self._load_and_cache()
 
         # Run the rules on the engine.
@@ -79,9 +77,9 @@ class Pipeline:
     DEFAULT: ClassVar["Pipeline"]
 
 
-class Tracker:
+class RuleFile:
     """
-    Tracker for a rule file that validates the file state and runs rules.
+    Loads a rule file, tracks changes, and runs the rules on prompts.
     """
 
     def __init__(self, file_path: str, file_stat: stat_result):
@@ -106,7 +104,7 @@ class Tracker:
         yield str(self._stat.st_size)
 
     def run(self, engine: Engine):
-        print(f"→ running {self._path}")
+        print(f"→ {self._path}")
         if self._rules:
             engine.run(self._rules)
 
