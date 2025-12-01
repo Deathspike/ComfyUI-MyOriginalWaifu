@@ -17,17 +17,17 @@ class Prompt:
         return str(self._tags)
 
     def add(self, anchor: Tag | None, tags: TagList):
-        # Resolve the semantic anchor and store the original weight.
-        anchor_tag = next((tag for tag in self._tags if tag == anchor), None)
-        anchor_key = anchor_tag.name if anchor_tag else None
-        anchor_weight = anchor_tag.weight if anchor_tag else 1
+        # Resolve the semantic anchor.
+        anchor = next((tag for tag in self._tags if tag == anchor), None)
+        anchor_key = anchor.name if anchor else None
+        anchor_weight = anchor.weight if anchor else 1
 
-        # Resolve the positional anchor using the forward pointer.
-        while anchor_tag and anchor_tag.name in self._bind:
-            anchor_tag = self._bind[anchor_tag.name]
+        # Resolve the positional anchor.
+        while anchor and anchor.name in self._bind:
+            anchor = self._bind[anchor.name]
 
         for tag in tags:
-            # Create a tag using the semantic anchor weight.
+            # Create the tag on the semantic anchor weight.
             new_weight = anchor_weight * tag.weight
             new_tag = Tag(tag.name, new_weight)
 
@@ -37,11 +37,11 @@ class Prompt:
                 existing_tag.enabled = True
                 existing_tag.weight = max(existing_tag.weight, new_tag.weight)
             except ValueError:
-                # Add the tag using the positional anchor.
-                if anchor_key and anchor_tag:
-                    self._tags.insert(self._tags.index(anchor_tag) + 1, new_tag)
+                # Add the tag after the positional anchor.
+                if anchor and anchor_key:
+                    self._tags.insert(self._tags.index(anchor) + 1, new_tag)
                     self._bind[anchor_key] = new_tag
-                    anchor_tag = new_tag
+                    anchor = new_tag
                 else:
                     self._tags.append(new_tag)
 
