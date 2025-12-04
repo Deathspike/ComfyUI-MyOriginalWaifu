@@ -1,6 +1,5 @@
 from hashlib import sha256
 from os import listdir, path, stat, stat_result
-from typing import ClassVar
 from yaml import safe_load
 
 from .engine import Engine
@@ -74,7 +73,7 @@ class Pipeline:
         print(f"→ negative: {negative}")
 
     # Shared default instance.
-    DEFAULT: ClassVar["Pipeline"]
+    DEFAULT: "Pipeline"
 
 
 class RuleFile:

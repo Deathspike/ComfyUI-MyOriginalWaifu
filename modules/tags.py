@@ -39,20 +39,13 @@ class TagList(list[Tag]):
             return self._parse_str(tags)
 
     def _parse_list(self, tags: list[object] | tuple[object]):
-        result: list[Tag] = []
-
         for value in tags:
             if isinstance(value, str):
-                result.extend(self._parse_str(value))
-
-        return result
+                for tag in self._parse_str(value):
+                    yield tag
 
     def _parse_str(self, tags: str):
-        result: list[Tag] = []
-
         for tag in split(r"[,\n]", tags):
             clean_tag = tag.strip()
             if clean_tag:
-                result.append(Tag(clean_tag))
-
-        return result
+                yield Tag(clean_tag)
