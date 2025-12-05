@@ -28,8 +28,8 @@ class Prompt:
 
         for tag in tags:
             # Create the tag on the semantic anchor weight.
-            new_weight = anchor_weight * tag.weight
-            new_tag = Tag(tag.name, new_weight)
+            new_pieces = [(piece[0], anchor_weight * piece[1]) for piece in tag.pieces]
+            new_tag = Tag(tag.name, new_pieces)
 
             try:
                 # If the tag exists, use the strongest weight.

@@ -114,7 +114,7 @@ class BaseRule(ABC):
             tags = TagList(value)
             if not len(tags):
                 auditor.fail_prop(key, f"{key} cannot be empty")
-            elif not weights and any(tag.weight != 1 for tag in tags):
+            elif not weights and tags.uses_weight():
                 auditor.fail_prop(key, f"{key} cannot contain weights")
             else:
                 return tags
