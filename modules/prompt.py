@@ -3,7 +3,7 @@ from .tags import Tag, TagList
 
 class Prompt:
     """
-    Mutable prompt with anchor-based tag mutations.
+    Prompt that supports anchor-based mutations.
     """
 
     def __init__(self, prompt: str):
