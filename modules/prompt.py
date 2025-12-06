@@ -32,10 +32,12 @@ class Prompt:
             new_tag = Tag(tag.name, new_pieces)
 
             try:
-                # If the tag exists, use the strongest weight.
+                # If the tag exists, enable it, and use the strongest weight.
                 existing_tag = self._tags[self._tags.index(new_tag)]
                 existing_tag.enabled = True
-                existing_tag.weight = max(existing_tag.weight, new_tag.weight)
+                if new_tag.weight >= existing_tag.weight:
+                    existing_tag.pieces = new_tag.pieces
+                    existing_tag.weight = new_tag.weight
             except ValueError:
                 # Add the tag after the positional anchor.
                 if anchor and anchor_key:
