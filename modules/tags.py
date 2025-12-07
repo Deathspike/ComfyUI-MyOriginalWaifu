@@ -73,7 +73,7 @@ class _TagBuilder:
         # Create the validated tag.
         name = "".join(self._pieces)
         pieces = zip(self._pieces, (group.calculate_weight() for group in self._groups))
-        return Tag(name, list(pieces))
+        return Tag(True, name, list(pieces))
 
 
 class _TagListParser:
@@ -204,8 +204,8 @@ class Tag:
     Tag with a name, weighted pieces, and a semantic weight.
     """
 
-    def __init__(self, name: str, pieces: list[tuple[str, float]]):
-        self.enabled = True
+    def __init__(self, enabled: bool, name: str, pieces: list[tuple[str, float]]):
+        self.enabled = enabled
         self.name = name
         self.pieces = pieces
         self.weight = max(piece[1] for piece in pieces)

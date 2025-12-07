@@ -3,7 +3,7 @@ from os import listdir, path, stat, stat_result
 from yaml import safe_load
 
 from .engine import Engine
-from .prompt import Prompt
+from .prompt import RegionPrompt
 from .rules import Auditor, UnionRuleList
 from .utils.typing import Typing
 from .utils.version import get_project_version
@@ -93,21 +93,47 @@ class Pipeline:
         hash.update(negative.encode("utf-8"))
         return hash.hexdigest()
 
-    def run(self, positive: Prompt, negative: Prompt):
-        engine = Engine(positive, negative)
-
-        # Load the rule files.
+    def run(self, positive: RegionPrompt, negative: RegionPrompt):
         print(f"[ComfyUI-MyOriginalWaifu v{self._version}]")
+        print(f"← positive: {positive}")
+        print(f"← negative: {negative}")
         print(f"→ {self._directory}")
         self._load_and_cache()
 
-        # Run the rules on the engine.
-        for file in sorted(self._cache.keys()):
-            self._cache[file].run(engine)
+        # Check the rules.
+        if not any(self._cache):
+            print(f"x skipped (rules not found)")
+            return
 
-        # Log the output prompt.
-        print(f"→ positive: {positive}")
-        print(f"→ negative: {negative}")
+        # Determine the mode.
+        region_count = max(len(positive), len(negative))
+        multi_region = region_count > 1
+
+        # Run the rules on each region.
+        for index in range(region_count):
+            positive_region = positive.get_or_create(index)
+            negative_region = negative.get_or_create(index)
+            engine = Engine(positive_region, negative_region)
+
+            # Log the region.
+            if multi_region:
+                print(f"[Region #{index}]")
+                print(f"← positive: {positive_region}")
+                print(f"← negative: {negative_region}")
+
+            # Run the rules on the region.
+            for file in sorted(self._cache.keys()):
+                self._cache[file].run(engine)
+
+            # Log the region output.
+            print(f"→ positive: {positive_region}")
+            print(f"→ negative: {negative_region}")
+
+        # Log the output.
+        if multi_region:
+            print(f"[Regions #0-{region_count - 1}]")
+            print(f"→ positive: {positive}")
+            print(f"→ negative: {negative}")
 
     # Shared default instance.
     DEFAULT: "Pipeline"

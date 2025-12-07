@@ -1,5 +1,5 @@
 from ..modules.pipeline import Pipeline
-from ..modules.prompt import Prompt
+from ..modules.prompt import RegionPrompt
 
 
 class MyOriginalWaifu:
@@ -22,8 +22,8 @@ class MyOriginalWaifu:
         return Pipeline.DEFAULT.get_cache_key(positive, negative)
 
     def process(self, positive: str, negative: str):
-        positive_prompt = Prompt(positive)
-        negative_prompt = Prompt(negative)
+        positive_prompt = RegionPrompt(positive)
+        negative_prompt = RegionPrompt(negative)
         Pipeline.DEFAULT.run(positive_prompt, negative_prompt)
 
         positive = str(positive_prompt)
