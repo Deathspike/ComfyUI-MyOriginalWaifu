@@ -174,7 +174,7 @@ class _TagListRenderer:
         weight = 1
 
         for tag in self._get_filtered():
-            # Emit each weighted piece.
+            # Emit each piece.
             for piece_text, piece_weight in tag.pieces:
                 if piece_weight != weight:
                     if weight != 1:
@@ -188,13 +188,12 @@ class _TagListRenderer:
                 elif divide:
                     yield ", "
                     divide = False
-
                 yield piece_text
 
             # Divide the next tag.
             divide = True
 
-        # Emit trailing group.
+        # Emit the trailing group.
         if weight != 1:
             yield self._get_group_end(weight)
 

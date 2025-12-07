@@ -241,20 +241,16 @@ class UnionRuleList(list[GroupRule | SwitchRule | TagRule]):
         super().__init__(self._parse(auditor, nodes))
 
     def _parse(self, auditor: Auditor, nodes: list[object] | tuple[object]):
-        result: list[GroupRule | SwitchRule | TagRule] = []
-
         for index, node in enumerate(nodes):
             if not Typing.is_dict(node):
                 auditor.fail_node(index, "rule must be a dict")
             with auditor.enter_node(index, node) as name:
                 type = node.get("type")
                 if type is None:
-                    result.append(TagRule(auditor, name, node))
+                    yield TagRule(auditor, name, node)
                 elif type == "group":
-                    result.append(GroupRule(auditor, name, node))
+                    yield GroupRule(auditor, name, node)
                 elif type == "switch":
-                    result.append(SwitchRule(auditor, name, node))
+                    yield SwitchRule(auditor, name, node)
                 else:
                     auditor.fail_prop("type", f"'{type}' type is not supported")
-
-        return result
