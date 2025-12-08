@@ -5,8 +5,8 @@ from yaml import safe_load
 from .engine import Engine
 from .prompt import RegionPrompt
 from .rules import Auditor, UnionRuleList
+from .utils.project import get_project_info
 from .utils.typing import Typing
-from .utils.version import get_project_version
 
 
 class _File:
@@ -54,7 +54,7 @@ class Pipeline:
     def __init__(self, directory: str | None = None):
         self._cache: dict[str, _File] = {}
         self._directory = directory if directory else self._get_base_directory()
-        self._version = get_project_version()
+        self._displayName, self._version = get_project_info()
 
     def _get_base_directory(self):
         base_path = path.dirname(__file__)
@@ -94,7 +94,7 @@ class Pipeline:
         return hash.hexdigest()
 
     def run(self, positive: RegionPrompt, negative: RegionPrompt):
-        print(f"[ComfyUI-MyOriginalWaifu v{self._version}]")
+        print(f"[{self._displayName} v{self._version}]")
         print(f"← positive: {positive}")
         print(f"← negative: {negative}")
         print(f"→ {self._directory}")
