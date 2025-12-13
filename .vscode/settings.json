@@ -1,0 +1,7 @@
+{
+  "editor.defaultFormatter": "ms-python.black-formatter",
+  "editor.formatOnSave": true,
+  "explorer.excludeGitIgnore": true,
+  "explorer.sortOrderLexicographicOptions": "upper",
+  "python.analysis.typeCheckingMode": "strict"
+}

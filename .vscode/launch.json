@@ -1,0 +1,11 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run Test",
+      "module": "modules.test",
+      "request": "launch",
+      "type": "debugpy"
+    }
+  ]
+}
