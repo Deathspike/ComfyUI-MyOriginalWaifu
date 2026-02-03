@@ -1,7 +1,7 @@
 [project]
 name = "comfyui-myoriginalwaifu"
 description = "My Original Waifu is a tag-based prompt-transformation engine for ComfyUI designed for creators who want their original characters to feel consistent, expressive, and faithfully rendered across every scene. Instead of manually adjusting tags each time you generate an image, you define the essence of your waifu, her look, her outfits, the way she appears in different contexts, and the engine transforms your prompt to match those intentions. It stays out of the way and simply follows your rules with clarity and consistency. Your Waifu. Your Rules. Your Perfect Prompt."
-version = "0.8.0"
+version = "1.0.0"
 license = { file = "LICENSE" }
 dependencies  = []
 
