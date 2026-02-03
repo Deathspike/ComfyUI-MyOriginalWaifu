@@ -94,9 +94,6 @@ And here's the _exact same_ workflow after **swapping the CLIP nodes**:
 
 I'm glad you're so _enthusiastic_! Let's turn you into a **rule-writing master**.
 
-> [!WARNING]
-> Until **v1.0**, syntax and semantics _may_ change. I'll do my best to keep updates backwards-compatible.
-
 ### 1. YAML Rule File
 
 All your _waifu_ logic lives in **YAML rule files** inside the extension's `rules` directory:
