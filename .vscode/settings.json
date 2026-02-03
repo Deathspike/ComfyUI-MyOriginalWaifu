@@ -3,5 +3,10 @@
   "editor.formatOnSave": true,
   "explorer.excludeGitIgnore": true,
   "explorer.sortOrderLexicographicOptions": "upper",
-  "python.analysis.typeCheckingMode": "strict"
+  "python.analysis.diagnosticSeverityOverrides": {"reportMissingModuleSource": "none"},
+  "python.analysis.typeCheckingMode": "strict",
+  "python.languageServer": "Pylance",
+  "ruff.lint.enable": true,
+  "ruff.lint.ignore": ["E501"],
+  "ruff.lint.select": ["E", "F", "I"]
 }
