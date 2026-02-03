@@ -110,7 +110,7 @@ class Engine:
 
     def _run(self, anchor: _Anchor, rule: GroupRule | SwitchRule | TagRule):
         if not self._check_conditions(rule):
-            self._log.add("x", f"skipped (conditions not met)")
+            self._log.add("x", "skipped (conditions not met)")
             return False
         elif isinstance(rule, GroupRule):
             self._run_group(self._get_anchor(anchor, rule), rule)
@@ -145,7 +145,7 @@ class Engine:
 
         # Evaluate the default branch.
         if default:
-            with self._log.enter(f"default", default):
+            with self._log.enter("default", default):
                 self._run(anchor, default)
 
     def _run_tag(self, anchor: _Anchor, rule: TagRule):

@@ -1,6 +1,7 @@
 from os import path
-from tomllib import load
 from typing import Any
+
+from tomllib import load
 
 
 def get_project_info():

@@ -1,5 +1,6 @@
 from hashlib import sha256
 from os import listdir, path, stat, stat_result
+
 from yaml import safe_load
 
 from .engine import Engine
@@ -102,7 +103,7 @@ class Pipeline:
 
         # Check the rules.
         if not any(self._cache):
-            print(f"x skipped (rules not found)")
+            print("x skipped (rules not found)")
             return
 
         # Determine the mode.

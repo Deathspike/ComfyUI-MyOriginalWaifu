@@ -55,7 +55,7 @@ class Auditor:
             self._path.pop()
 
     def fail(self, message: str):
-        raise ValueError(f"Error at {"".join(self._path)}, {message}")
+        raise ValueError(f"Error at {''.join(self._path)}, {message}")
 
     def fail_node(self, index: int, message: str):
         with self.enter_node(index, {}):
