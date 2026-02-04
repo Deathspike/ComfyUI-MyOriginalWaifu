@@ -1,6 +1,6 @@
-# 🌸 My Original Waifu
+# ComfyUI-MyOriginalWaifu
 
-_My Original Waifu_ is a **tag-based prompt-transformation engine** for ComfyUI designed for creators who want their original characters to feel consistent, expressive, and faithfully rendered across every scene. Instead of manually adjusting tags each time you generate an image, you define the essence of your _waifu_, her look, her outfits, the way she appears in different contexts, and the engine transforms your prompt to match those intentions. It stays out of the way and simply **follows your rules with clarity and consistency**. _Your Waifu. Your Rules. Your Perfect Prompt._
+_My Original Waifu_ is a **tag-based prompt-transformation engine** for ComfyUI designed for creators who want their original characters to feel consistent, expressive, and faithfully rendered across every scene. Instead of manually adjusting tags each time you generate an image, you define the essence of your _waifu_, her look, her outfits, the way she appears in different contexts, and the engine transforms your prompt to match those intentions. It stays out of the way and simply **follows your rules with clarity and consistency**.
 
 ## 🤨 What the hell does that-
 
@@ -50,7 +50,7 @@ That's the whole idea: you declare the logic _once_, and the engine automates yo
 
 ## 🛠️ Okay! How do I install this thing?
 
-Good question! Installing _My Original Waifu_ is quicker than picking your _waifu's_ hairstyle. You can install in two ways:
+Good question! Installing is quicker than picking your _waifu's_ hairstyle. You can install in two ways:
 
 ### Option 1 - ComfyUI Manager (Recommended)
 
@@ -109,7 +109,7 @@ ComfyUI/
 > [!TIP]
 > If you don't know the path, **run the workflow** and copy the `rules` directory path from your console.
 
-You can create a file per _waifu_, per _outfit_, or mix them. **It's up to you**. Just make sure the file extension is `.yaml`.
+You can create a file per _waifu_, per _outfit_, or mix them. **It's up to you**. Just ensure the file extension is `.yaml`.
 
 > [!NOTE]
 > You **do not have to restart** ComfyUI. _My Original Waifu_ automatically reloads YAML rule files.
@@ -232,7 +232,7 @@ All combinations of `any_of`, `all_of` and `none_of` are valid:
 ---
 
 > [!IMPORTANT]
-> Conditions _intentionally_ **see only the positive prompt**. Writing rules as "_if X contains Y, do Z_" keeps them simple.
+> Conditions see **only the positive prompt**. Writing rules as "_if X contains Y, do Z_" keeps them simple.
 
 ### 5. Anchors: `anchor`, `anchor_negative`
 
@@ -263,11 +263,11 @@ Sets the _negative anchor_ to the **first matched** tag in the **negative prompt
 ---
 
 > [!IMPORTANT]
-> If an **anchor is not found**, the anchor will _not_ change. Without one, tags are added to the **end of the prompt**.
+> If an **anchor is not found**, the anchor will _not_ change. Without one, tags add to the **end of the prompt**.
 
 ### 6. Group Rules
 
-Groups let you bundle **multiple rules** under **the same _conditions_ and _anchors_**. Use `type: group` **and** `children`:
+Groups bundle **multiple rules** under **the same _conditions_ and _anchors_**. Use `type: group` **and** `children`:
 
 ```yaml
 - any_of: celica
@@ -290,11 +290,11 @@ These are the _key points_:
 - Child rules can have their own _conditions_ and _anchors_.
 - Child rules can themselves be _group_ or _switch_ rules.
 
-Groups are _perfect_ to keep related rules together, and help you **avoid repeating** the same _conditions_ and _anchors_.
+Groups are _perfect_ to keep rules together, and help you **avoid repeating** the same _conditions_ and _anchors_.
 
 ### 7. Switch Rules
 
-Switches let you **choose a child** that matches _conditions_, or use the **default child**. Use `type: switch` and `children`:
+Switches **choose a child** that matches _conditions_, or use the **default child**. Use `type: switch` and `children`:
 
 ```yaml
 - any_of: celica
@@ -309,7 +309,7 @@ Switches let you **choose a child** that matches _conditions_, or use the **defa
       add: black camisole
 ```
 
-> _"If the positive prompt **contains** `celica`, **evaluate the first matching** child, and **add** its tags **right after `celica`**."_
+> _"If the positive prompt **contains** `celica`, **evaluate the child rule match**, and **add** its tags **right after `celica`**."_
 
 These are the _key points_:
 
@@ -324,7 +324,7 @@ Switches are _perfect_ when you want **mutually exclusive options**, like pickin
 
 ## 😭 Help, my _waifu_ is broken!
 
-That happens to _the best of us_! _My Original Waifu_ always tells you **what it did**, and more importantly, **why it did** that.
+That happens to _the best of us_! Luckily, _My Original Waifu_ always tells you **what it did**, and **why it did** that.
 
 ### Errors
 
@@ -336,8 +336,8 @@ Error at celica.yaml[0].type, 'grop' type is not supported
 
 These are some _common causes_:
 
-- Using invalid properties, like `anyof` instead of `any_of`, or spelling the `type` wrong (`grop` instead of `group`).
-- Using properties that don't exist, like `children` on a _tag_ rule, or forgetting `type` on a _group_ or _switch_ rule.
+- Using invalid properties (`anyof` instead of `any_of`) or spelling the `type` wrong (`grop` instead of `group`).
+- Using properties that do _not_ exist (`children` on a _tag_ rule) or forgetting to set `type` for a _group_ or _switch_.
 - Forgetting to add _required_ properties, like `children` on a _group_ or _switch_.
 
 Fix the problem, save the rule file, and **run the workflow again**.
@@ -429,7 +429,7 @@ You don't need to name _every_ rule, but **naming important rules** makes troubl
 
 ## 🥺 Can I get a complete example?
 
-Wow. The _audacity_. The puppy eyes. The unstoppable "_pleaseee?_" energy. Fine! Here's a **minimal complete example**:
+Wow. The _audacity_. The puppy eyes. The unstoppable "_pleaseee?_" energy. Fine! Here's a **minimal example**:
 
 ```yaml
 - name: celica
@@ -541,7 +541,7 @@ _Perfect_! You already know the basics. Here's how the engine **really** behaves
 
 Rules always run in a **stable and predictable order**:
 
-  - Rule files are evaluated in **alphabetical** order: `00_core.yaml` → `10_celica.yaml` → `20_charlotte.yaml` → ...
+  - Rule files are evaluated in **alphabetical** order: `00_core.yaml` → `10_celica.yaml` → `20_charlotte.yaml`.
   - Rules in files are evaluated **top to bottom**, exactly as written.
   - Evaluation for _groups_ and _switches_ is **depth-first**.
 
