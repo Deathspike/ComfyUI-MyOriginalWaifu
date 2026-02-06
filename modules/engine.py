@@ -148,22 +148,28 @@ class Engine:
             with self._log.enter("default", default):
                 self._run(anchor, default)
 
-    def _run_tag(self, anchor: _Anchor, rule: TagRule):
+    def _run_tag(self, anchor: _Anchor, tag: TagRule):
         # Evaluate add mutations.
-        if rule.add:
-            self._log.add("+", f"add: {rule.add}")
-            self._positive.add(anchor.positive, rule.add)
-        if rule.add_negative:
-            self._log.add("+", f"add_negative: {rule.add_negative}")
-            self._negative.add(anchor.negative, rule.add_negative)
+        if tag.add:
+            self._log.add("+", f"add: {tag.add}")
+            self._positive.add(anchor.positive, True, tag.add)
+        if tag.add_negative:
+            self._log.add("+", f"add_negative: {tag.add_negative}")
+            self._negative.add(anchor.negative, True, tag.add_negative)
 
         # Evaluate remove mutations.
-        if rule.remove:
-            self._log.add("-", f"remove: {rule.remove}")
-            self._positive.remove(rule.remove)
-        if rule.remove_negative:
-            self._log.add("-", f"remove_negative: {rule.remove_negative}")
-            self._negative.remove(rule.remove_negative)
+        if tag.remove:
+            self._log.add("-", f"remove: {tag.remove}")
+            self._positive.remove(tag.remove)
+        if tag.remove_negative:
+            self._log.add("-", f"remove_negative: {tag.remove_negative}")
+            self._negative.remove(tag.remove_negative)
+
+        # Evaluate tmp mutations.
+        if tag.tmp:
+            self._log.add("~", f"tmp: {tag.tmp}")
+            self._positive.add(anchor.positive, False, tag.tmp)
+            self._negative.add(anchor.negative, False, tag.tmp)
 
     def run(self, rules: UnionRuleList):
         for index, rule in enumerate(rules):

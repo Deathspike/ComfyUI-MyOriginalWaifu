@@ -29,7 +29,7 @@ class Prompt:
                 self._tags.append(anchor)
                 return anchor
 
-    def add(self, anchor: Tag | None, tags: TagList):
+    def add(self, anchor: Tag | None, enabled: bool, tags: TagList):
         # Resolve the semantic anchor.
         anchor = self._get_or_create(anchor) if anchor else None
         anchor_name = anchor.name if anchor else None
@@ -42,12 +42,12 @@ class Prompt:
         for tag in tags:
             # Create the tag on the semantic anchor weight.
             new_pieces = [(piece[0], anchor_weight * piece[1]) for piece in tag.pieces]
-            new_tag = Tag(True, tag.name, new_pieces)
+            new_tag = Tag(enabled, tag.name, new_pieces)
 
             try:
                 # If the tag exists, enable it, and use the strongest weight.
                 existing_tag = self._tags[self._tags.index(new_tag)]
-                existing_tag.enabled = True
+                existing_tag.enabled = enabled
                 if new_tag.weight >= existing_tag.weight:
                     existing_tag.pieces = new_tag.pieces
                     existing_tag.weight = new_tag.weight

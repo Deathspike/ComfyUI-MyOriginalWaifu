@@ -206,17 +206,18 @@ class SwitchRule(BaseRule):
 
 class TagRule(BaseRule):
     """
-    Tag rule that supports mutations with `add`, `add_negative`, `remove` and `remove_negative`.
+    Tag rule that supports mutations with `add`, `add_negative`, `remove`, `remove_negative` and `tmp`.
     """
 
     def __init__(self, auditor: Auditor, name: str | None, node: dict[object, object]):
-        if not {"add", "add_negative", "remove", "remove_negative"} & node.keys():
+        if not self._has_mutations(node):
             auditor.fail("a tag property is required")
         else:
             self.add = None
             self.add_negative = None
             self.remove = None
             self.remove_negative = None
+            self.tmp = None
             super().__init__(auditor, name, node)
 
     def _handle_property(self, auditor: Auditor, key: str, value: object):
@@ -228,8 +229,13 @@ class TagRule(BaseRule):
             self.remove = self._parse_tags(auditor, key, value, False)
         elif key == "remove_negative":
             self.remove_negative = self._parse_tags(auditor, key, value, False)
+        elif key == "tmp":
+            self.tmp = self._parse_tags(auditor, key, value, True)
         else:
             super()._handle_property(auditor, key, value)
+
+    def _has_mutations(self, node: dict[object, object]):
+        return {"add", "add_negative", "remove", "remove_negative", "tmp"} & node.keys()
 
 
 class UnionRuleList(list[GroupRule | SwitchRule | TagRule]):
