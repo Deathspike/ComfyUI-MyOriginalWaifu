@@ -106,7 +106,7 @@ class _TagListParser:
                 self._group = _Group(self._group.defaultWeight, self._group.parent)
                 self._tags[-1].enter(self._group)
             elif current == "," or current == "\n":
-                self._group = _Group(self._group.defaultWeight, self._group.parent)
+                self._group = self._group if self._group.parent else _Group(1, None)
                 self._tags.append(_TagBuilder(self._group))
             else:
                 self._tags[-1].append(current)
