@@ -66,16 +66,14 @@ class Auditor:
             self.fail(message)
 
 
-class BaseRule(ABC):
+class ConditionRule(ABC):
     """
-    Base rule that supports anchors with `anchor` and `anchor_negative`, and conditions with `any_of`, `all_of` and `none_of`.
+    Base rule that supports conditions with `any_of`, `all_of` and `none_of`.
     """
 
     @abstractmethod
     def __init__(self, auditor: Auditor, name: str | None, node: dict[object, object]):
         self.name = name
-        self.anchor = None
-        self.anchor_negative = None
         self.any_of = None
         self.all_of = None
         self.none_of = None
@@ -84,10 +82,6 @@ class BaseRule(ABC):
         for key, value in node.items():
             if not isinstance(key, str):
                 auditor.fail("property names must be strings")
-            elif key == "anchor":
-                self.anchor = self._parse_tags(auditor, key, value, False)
-            elif key == "anchor_negative":
-                self.anchor_negative = self._parse_tags(auditor, key, value, False)
             elif key == "any_of":
                 self.any_of = self._parse_tags(auditor, key, value, False)
             elif key == "all_of":
@@ -120,7 +114,26 @@ class BaseRule(ABC):
                 return tags
 
 
-class GroupRule(BaseRule):
+class ContextRule(ConditionRule):
+    """
+    Base rule that supports anchors with `anchor` and `anchor_negative`.
+    """
+
+    def __init__(self, auditor: Auditor, name: str | None, node: dict[object, object]):
+        self.anchor = None
+        self.anchor_negative = None
+        super().__init__(auditor, name, node)
+
+    def _handle_property(self, auditor: Auditor, key: str, value: object):
+        if key == "anchor":
+            self.anchor = self._parse_tags(auditor, key, value, False)
+        elif key == "anchor_negative":
+            self.anchor_negative = self._parse_tags(auditor, key, value, False)
+        else:
+            super()._handle_property(auditor, key, value)
+
+
+class GroupRule(ContextRule):
     """
     Group rule that runs *all* rules in `children` whose conditions match.
     """
@@ -144,7 +157,36 @@ class GroupRule(BaseRule):
             return UnionRuleList(auditor, children)
 
 
-class SwitchRule(BaseRule):
+class SwapRule(ConditionRule):
+    """
+    Swap rule that removes the *first* matched tag in `match`, then applies mutations at its position with `add` and `add_negative`.
+    """
+
+    def __init__(self, auditor: Auditor, name: str | None, node: dict[object, object]):
+        if "match" not in node:
+            auditor.fail("match property is required")
+        elif not self._has_mutations(node):
+            auditor.fail("a mutation property is required")
+        else:
+            self.add = None
+            self.add_negative = None
+            super().__init__(auditor, name, node)
+
+    def _handle_property(self, auditor: Auditor, key: str, value: object):
+        if key == "add":
+            self.add = self._parse_tags(auditor, key, value, True)
+        elif key == "add_negative":
+            self.add_negative = self._parse_tags(auditor, key, value, True)
+        elif key == "match":
+            self.match = self._parse_tags(auditor, key, value, False)
+        else:
+            super()._handle_property(auditor, key, value)
+
+    def _has_mutations(self, node: dict[object, object]):
+        return {"add", "add_negative"} & node.keys()
+
+
+class SwitchRule(ContextRule):
     """
     Switch rule that runs the *first* rule in `children` whose conditions match, or the optional *default* rule.
     """
@@ -204,14 +246,14 @@ class SwitchRule(BaseRule):
             return node
 
 
-class TagRule(BaseRule):
+class TagRule(ContextRule):
     """
-    Tag rule that supports mutations with `add`, `add_negative`, `remove`, `remove_negative` and `tmp`.
+    Tag rule that applies mutations with `add`, `add_negative`, `remove`, `remove_negative` and `tmp`.
     """
 
     def __init__(self, auditor: Auditor, name: str | None, node: dict[object, object]):
         if not self._has_mutations(node):
-            auditor.fail("a tag property is required")
+            auditor.fail("a mutation property is required")
         else:
             self.add = None
             self.add_negative = None
@@ -238,7 +280,7 @@ class TagRule(BaseRule):
         return {"add", "add_negative", "remove", "remove_negative", "tmp"} & node.keys()
 
 
-class UnionRuleList(list[GroupRule | SwitchRule | TagRule]):
+class UnionRuleList(list[GroupRule | SwapRule | SwitchRule | TagRule]):
     """
     Union list of `GroupRule`, `SwitchRule` and `TagRule` rules.
     """
@@ -256,6 +298,8 @@ class UnionRuleList(list[GroupRule | SwitchRule | TagRule]):
                     yield TagRule(auditor, name, node)
                 elif type == "group":
                     yield GroupRule(auditor, name, node)
+                elif type == "swap":
+                    yield SwapRule(auditor, name, node)
                 elif type == "switch":
                     yield SwitchRule(auditor, name, node)
                 else:

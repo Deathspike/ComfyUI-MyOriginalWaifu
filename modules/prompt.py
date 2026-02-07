@@ -1,3 +1,5 @@
+from typing import Iterable
+
 from .tags import Tag, TagList
 
 
@@ -29,7 +31,7 @@ class Prompt:
                 self._tags.append(anchor)
                 return anchor
 
-    def add(self, anchor: Tag | None, enabled: bool, tags: TagList):
+    def add(self, anchor: Tag | None, enabled: bool, tags: Iterable[Tag]):
         # Resolve the semantic anchor.
         anchor = self._get_or_create(anchor) if anchor else None
         anchor_name = anchor.name if anchor else None
@@ -60,7 +62,7 @@ class Prompt:
                 else:
                     self._tags.append(new_tag)
 
-    def remove(self, tags: TagList):
+    def remove(self, tags: Iterable[Tag]):
         for tag in tags:
             try:
                 existing_tag = self._tags[self._tags.index(tag)]

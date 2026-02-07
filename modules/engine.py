@@ -1,7 +1,7 @@
 from contextlib import contextmanager
 
 from .prompt import Prompt
-from .rules import GroupRule, SwitchRule, TagRule, UnionRuleList
+from .rules import GroupRule, SwapRule, SwitchRule, TagRule, UnionRuleList
 from .tags import Tag
 
 
@@ -23,21 +23,23 @@ class _Logger:
     def __init__(self):
         self._depth = 0
 
-    def _enter(self, property: str, rule: GroupRule | SwitchRule | TagRule):
+    def _enter(self, property: str, rule: GroupRule | SwapRule | SwitchRule | TagRule):
         indent = "  " * self._depth
         prefix = self._get_rule_prefix(rule)
         suffix = f"({rule.name})" if rule.name else ""
         print(f"{indent}{prefix} {property} {{{self._get_rule_type(rule)}}} {suffix}")
 
-    def _get_rule_prefix(self, rule: GroupRule | SwitchRule | TagRule):
+    def _get_rule_prefix(self, rule: GroupRule | SwapRule | SwitchRule | TagRule):
         if isinstance(rule, GroupRule) or isinstance(rule, SwitchRule):
             return ">"
         else:
             return "$"
 
-    def _get_rule_type(self, rule: GroupRule | SwitchRule | TagRule):
+    def _get_rule_type(self, rule: GroupRule | SwapRule | SwitchRule | TagRule):
         if isinstance(rule, GroupRule):
             return "group"
+        elif isinstance(rule, SwapRule):
+            return "swap"
         elif isinstance(rule, SwitchRule):
             return "switch"
         else:
@@ -48,7 +50,7 @@ class _Logger:
         print(f"{indent}{prefix} {message}")
 
     @contextmanager
-    def enter(self, property: str, rule: GroupRule | SwitchRule | TagRule):
+    def enter(self, property: str, rule: GroupRule | SwapRule | SwitchRule | TagRule):
         try:
             self._enter(property, rule)
             self._depth += 1
@@ -67,7 +69,7 @@ class Engine:
         self._positive = positive
         self._negative = negative
 
-    def _check_conditions(self, rule: GroupRule | SwitchRule | TagRule):
+    def _check_conditions(self, rule: GroupRule | SwapRule | SwitchRule | TagRule):
         enabled = True
 
         # Evaluate `any_of` condition.
@@ -88,7 +90,12 @@ class Engine:
             self._log.add("?", f"none_of({rule.none_of}) = {none_of}")
             enabled = enabled and none_of
 
-        return enabled
+        # Validate conditions.
+        if not enabled:
+            self._log.add("x", "skipped (conditions not met)")
+            return False
+        else:
+            return True
 
     def _get_anchor(self, anchor: _Anchor, rule: GroupRule | SwitchRule | TagRule):
         positive = anchor.positive
@@ -108,24 +115,56 @@ class Engine:
 
         return _Anchor(positive, negative)
 
-    def _run(self, anchor: _Anchor, rule: GroupRule | SwitchRule | TagRule):
+    def _run(self, anchor: _Anchor, rule: GroupRule | SwapRule | SwitchRule | TagRule):
         if not self._check_conditions(rule):
-            self._log.add("x", "skipped (conditions not met)")
             return False
         elif isinstance(rule, GroupRule):
-            self._run_group(self._get_anchor(anchor, rule), rule)
-            return True
+            return self._run_group(self._get_anchor(anchor, rule), rule)
+        elif isinstance(rule, SwapRule):
+            return self._run_swap(anchor, rule)
         elif isinstance(rule, SwitchRule):
-            self._run_switch(self._get_anchor(anchor, rule), rule)
-            return True
+            return self._run_switch(self._get_anchor(anchor, rule), rule)
         else:
-            self._run_tag(self._get_anchor(anchor, rule), rule)
-            return True
+            return self._run_tag(self._get_anchor(anchor, rule), rule)
 
     def _run_group(self, anchor: _Anchor, group: GroupRule):
+        # Evaluate children.
         for index, rule in enumerate(group.children):
             with self._log.enter(f"children[{index}]", rule):
                 self._run(anchor, rule)
+
+        return True
+
+    def _run_swap(self, anchor: _Anchor, swap: SwapRule):
+        # Evaluate `match` condition.
+        positive = next((tag for tag in swap.match if tag in self._positive), None)
+        negative = positive if positive in self._negative else None
+        self._log.add("?", f"match({swap.match}) = {positive}")
+
+        # Validate conditions.
+        if not positive:
+            self._log.add("x", "skipped (no match)")
+            return False
+        else:
+            # Evaluate add.
+            if swap.add:
+                self._log.add("=", f"swap({positive}): {swap.add}")
+                self._positive.add(positive, True, swap.add)
+
+            # Evaluate add_negative.
+            if swap.add_negative:
+                if negative:
+                    tags = swap.add_negative
+                    self._log.add("=", f"swap_negative({negative}): {tags}")
+                    self._negative.add(negative, True, tags)
+                else:
+                    self._log.add("+", f"add_negative: {swap.add_negative}")
+                    self._negative.add(anchor.negative, True, swap.add_negative)
+
+            # Remove matches.
+            self._positive.remove((positive,))
+            self._negative.remove((negative,)) if negative else None
+            return True
 
     def _run_switch(self, anchor: _Anchor, switch: SwitchRule):
         default = None if switch.default is None else switch.children[switch.default]
@@ -136,17 +175,19 @@ class Engine:
             suffix = f"({default.name})" if default.name else ""
             self._log.add("→", f"{prefix} set as default {suffix}")
 
-        # Evaluate conditional branches.
+        # Evaluate conditional children.
         for index, rule in enumerate(switch.children):
             if default != rule:
                 with self._log.enter(f"children[{index}]", rule):
                     if self._run(anchor, rule):
-                        return
+                        return True
 
         # Evaluate the default branch.
         if default:
             with self._log.enter("default", default):
                 self._run(anchor, default)
+
+        return True
 
     def _run_tag(self, anchor: _Anchor, tag: TagRule):
         # Evaluate add mutations.
@@ -170,6 +211,8 @@ class Engine:
             self._log.add("~", f"tmp: {tag.tmp}")
             self._positive.add(anchor.positive, False, tag.tmp)
             self._negative.add(anchor.negative, False, tag.tmp)
+
+        return True
 
     def run(self, rules: UnionRuleList):
         for index, rule in enumerate(rules):
