@@ -44,7 +44,7 @@ Yes! Think of YAML as a way to write down information in a format that's _easy f
   add: blue eyes
 ```
 
-> _"If the positive prompt **contains** `celica`, and **does not contain** `closed eyes`, **add** `blue eyes`._"
+> _"If the positive prompt **contains** `celica`, and **does not contain** `closed eyes`, **add** `blue eyes`."_
 
 That's the whole idea: you declare the logic _once_, and the engine automates your prompt _forever_.
 
@@ -127,7 +127,7 @@ A YAML rule file is just a **list of rules**, evaluated in order, from top to bo
 
 Each **rule is independent**, but together they build your _waifu_.
 
-### 3. Tag Rules: `add`, `add_negative`, `remove`, `remove_negative`
+### 3. Tag Rules: `add`, `add_negative`, `remove`, `remove_negative`, `tmp`
 
 The default _type of rule_ is the _tag_ rule, and these decide **what tags are added or removed**.
 
@@ -169,12 +169,22 @@ The default _type of rule_ is the _tag_ rule, and these decide **what tags are a
 - remove_negative: sketch
 ```
 
-> _"Always **remove** `sketch` from the **negative prompt**._"
+> _"Always **remove** `sketch` from the **negative prompt**."_
+
+#### `tmp`
+
+**Adds** _temporary_ tags to the **positive and negative prompt**.
+
+```yaml
+- tmp: thighhighs
+```
+
+> _"Always **add** `thighhighs` to the **positive and negative prompt** as a _temporary_ tag."_
 
 ---
 
 > [!IMPORTANT]
-> Removed tags **remain visible** for _future rules_, but **will not be in the output prompt**.
+> Removed and temporary tags **remain visible** for _future rules_, but **will not be in the output prompt**.
 
 > [!TIP]
 > You should **remove your _waifu's_ name**. The model doesn't know it anyway,
@@ -193,7 +203,7 @@ Requires that **at least one of the tags is present** in the **positive prompt**
   add: blue eyes
 ```
 
-> _"If the positive prompt **contains** `celica` **or** `charlotte`, **add** `blue eyes`._"
+> _"If the positive prompt **contains** `celica` **or** `charlotte`, **add** `blue eyes`."_
 
 #### `all_of`
 
@@ -204,7 +214,7 @@ Requires that **all the tags are present** in the **positive prompt**:
   add: black leather jacket
 ```
 
-> _"If the positive prompt **contains** `celica` **and** `jacket`, **add** `black leather jacket`._"
+> _"If the positive prompt **contains** `celica` **and** `jacket`, **add** `black leather jacket`."_
 
 #### `none_of`
 
@@ -215,7 +225,7 @@ Requires that **none of the tags are present** in the **positive prompt**:
   add: blue eyes
 ```
 
-> _"If the positive prompt **contains neither** `closed eyes` **nor** `eyes out of frame`, **add** `blue eyes`._"
+> _"If the positive prompt **contains neither** `closed eyes` **nor** `eyes out of frame`, **add** `blue eyes`."_
 
 #### Combinations
 
@@ -227,7 +237,7 @@ All combinations of `any_of`, `all_of` and `none_of` are valid:
   add: blue eyes
 ```
 
-> _"If the positive prompt **contains** `celica`, and **does not contains** `closed eyes`, **add** `blue eyes`._"
+> _"If the positive prompt **contains** `celica`, and **does not contains** `closed eyes`, **add** `blue eyes`."_
 
 ---
 
@@ -322,6 +332,27 @@ These are the _key points_:
 
 Switches are _perfect_ when you want **mutually exclusive options**, like picking an outfit.
 
+### 8. Swap Rules
+
+Swap rules are a _convenience rule type_ to **replace _this_ with _that_**:
+
+```yaml
+- match: thighhighs
+  type: swap
+  add: black thighhighs
+```
+
+> _"If the positive prompt **contains** `thighhighs`, **swap it with** `black thighhighs`."_
+
+These are the _key points_:
+
+- The `match` property **requires** a matching _positive_ tag (like a _condition_).
+- The `match` property _anchors_ on the **first matched** tag.
+- The `match` property _removes_ the **first matched** tag.
+- It then acts like a _tag_ rule to allow `add` and `add_negative`.
+
+Swap rules are _ideal_ when you want to treat a (_temporary_) tag like a **placeholder and expand it**.
+
 ## 😭 Help, my _waifu_ is broken!
 
 That happens to _the best of us_! Luckily, _My Original Waifu_ always tells you **what it did**, and **why it did** that.
@@ -363,6 +394,8 @@ Run a workflow that uses the engine, and you will see a **rule tree in your cons
       ? none_of(closed eyes, eyes out of frame) = True
       + add: blue eyes
       + add_negative: blue hair
+    $ children[2] {tag}
+      ~ tmp: thighhighs
 ```
 
 How to read this:
@@ -372,6 +405,7 @@ How to read this:
 - Lines starting with `?` → _condition_ checks and their results.
 - Lines starting with `@` → _anchor_ resolution and its result.
 - Lines starting with `+` → tags added.
+- Lines starting with `~` → _temporary_ tags added.
 - Lines starting with `-` → tags removed.
 - Lines starting with `x` → rules that were skipped, with the reason.
 
@@ -399,6 +433,8 @@ All rule paths are _precise_, but not exactly human-friendly. That's where the _
           none_of: closed eyes, eyes out of frame
           add: blue eyes
           add_negative: blue hair
+    - name: thighhighs
+      tmp: thighhighs
 ```
 
 Now errors become _much easier_ to read, because the rule path will include the `name`:
@@ -423,6 +459,8 @@ And the same applies to logs, rule names show up there too:
       ? none_of(closed eyes, eyes out of frame) = True
       + add: blue eyes
       + add_negative: blue hair
+    $ children[2] {tag} (thighhighs)
+      ~ tmp: thighhighs
 ```
 
 You don't need to name _every_ rule, but **naming important rules** makes troubleshooting _much_ easier.
@@ -490,9 +528,9 @@ Wow. The _audacity_. The puppy eyes. The unstoppable "_pleaseee?_" energy. Fine!
             - name: panties
               none_of: bottomless
               any_of: pantyshot, skirt lift
-              add: red panties
+              tmp: panties
             - name: thighhighs
-              add: black thighhighs
+              tmp: thighhighs
     # ----------
     # Outfit: Bikini
     # ----------
@@ -521,16 +559,31 @@ Wow. The _audacity_. The puppy eyes. The unstoppable "_pleaseee?_" energy. Fine!
           remove: underwear
         - name: torso
           none_of: topless
-          add: black bra
+          tmp: bra
         - name: bottom
           none_of: portrait
           type: group
           children:
             - name: panties
               none_of: bottomless
-              add: red panties
+              tmp: panties
             - name: thighhighs
-              add: black thighhighs
+              tmp: thighhighs
+    # ----------
+    # Underwear Swaps
+    # ----------
+    - name: swap-bra
+      match: bra
+      type: swap
+      add: black bra
+    - name: swap-panties
+      match: panties
+      type: swap
+      add: red panties
+    - name: swap-thighhighs
+      match: thighhighs
+      type: swap
+      add: black thighhighs
 ```
 
 ## 🔥 I'm ready for the hard stuff~
