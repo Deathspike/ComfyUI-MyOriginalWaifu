@@ -1,4 +1,4 @@
-from re import search
+from re import search, sub
 from typing import Iterable, Iterator
 
 from .utils.typing import Typing
@@ -40,7 +40,7 @@ class _TagBuilder:
     def validate_and_build(self):
         index = 1
 
-        # Clean leading whitespaces.
+        # Clean leading whitespace.
         while True:
             if not self._pieces:
                 return None
@@ -50,7 +50,7 @@ class _TagBuilder:
             else:
                 break
 
-        # Clean remaining whitespaces.
+        # Clean and collapse whitespace.
         while index < len(self._pieces):
             if not self._pieces[index]:
                 self._groups.pop(index)
@@ -66,7 +66,7 @@ class _TagBuilder:
             else:
                 index += 1
 
-        # Clean whitespaces on the outer edges.
+        # Clean whitespace on each edge.
         self._pieces[0] = self._pieces[0].lstrip()
         self._pieces[-1] = self._pieces[-1].rstrip()
 
@@ -124,21 +124,22 @@ class _TagListParser:
         start = self._index + 1
         end = start
 
-        # Accumulate the weight.
+        # Get the weight candidate.
         while end < len(self._value):
             current = self._value[end]
-            if current == "." or current.isdigit() or current.isspace():
+            if current in ".-+" or current.isdigit() or current.isspace():
                 end += 1
             else:
                 break
 
-        # Find the weight.
+        # Find a valid weight.
         value = self._value[start:end]
-        match = search(r"\d*\.\d+|\d+\.?\d*", value)
+        match = search(r"-?\s*(?:\d*\s*\.\s*\d+|\d+\s*\.\s*\d*|\d+)", value)
 
         # Parse the weight.
         if match:
-            self._group.weight = float(match.group(0))
+            numeric_match = sub(r"\s", "", match.group(0))
+            self._group.weight = float(numeric_match)
             self._index += len(value.rstrip())
             return True
         else:
@@ -170,7 +171,7 @@ class _TagListRenderer:
             return ")"
 
     def _render(self):
-        divide = False
+        separator = None
         weight = 1
 
         for tag in self._get_filtered():
@@ -179,19 +180,22 @@ class _TagListRenderer:
                 if piece_weight != weight:
                     if weight != 1:
                         yield self._get_group_end(weight)
-                    if divide:
-                        yield ", "
-                        divide = False
+                    if separator:
+                        yield separator
+                        separator = None
                     if piece_weight != 1:
                         yield "("
                     weight = piece_weight
-                elif divide:
-                    yield ", "
-                    divide = False
+                elif separator:
+                    yield separator
+                    separator = None
                 yield piece_text
 
             # Divide the next tag.
-            divide = True
+            if tag.pieces[-1][0].endswith("."):
+                separator = " "
+            else:
+                separator = ", "
 
         # Emit the trailing group.
         if weight != 1:
@@ -210,7 +214,9 @@ class Tag:
         self.weight = max(piece[1] for piece in pieces)
 
     def __eq__(self, value: object):
-        if isinstance(value, Tag):
+        if isinstance(value, str):
+            return value == self.name
+        elif isinstance(value, Tag):
             return value.name == self.name
         else:
             return False
@@ -230,8 +236,22 @@ class TagList(list[Tag]):
     def __init__(self, tags: list[object] | tuple[object] | str):
         super().__init__(self._parse(tags))
 
+    def __eq__(self, value: object):
+        if isinstance(value, str):
+            return self._is_same(TagList(value))
+        elif isinstance(value, TagList):
+            return self._is_same(value)
+        else:
+            return False
+
     def __str__(self):
         return "".join(_TagListRenderer(True, self))
+
+    def _is_same(self, tags: "TagList"):
+        if len(self) != len(tags):
+            return False
+        else:
+            return all(tag == other_tag for tag, other_tag in zip(self, tags))
 
     def _parse(self, tags: list[object] | tuple[object] | str):
         if not isinstance(tags, str):
