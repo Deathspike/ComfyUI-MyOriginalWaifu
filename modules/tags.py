@@ -166,30 +166,21 @@ class _TagListRenderer:
 
     def _get_group_end(self, weight: float):
         if weight != 1.1:
-            return f":{weight:.2g})"
+            return f":{self._get_weight(weight)})"
         else:
             return ")"
 
-    def _render(self):
+    def _get_runs(self):
+        runs: list[list] = []
         separator = None
-        weight = 1
 
         for tag in self._get_filtered():
-            # Emit each piece.
+            # Merge each piece into a run of equal weight.
             for piece_text, piece_weight in tag.pieces:
-                if piece_weight != weight:
-                    if weight != 1:
-                        yield self._get_group_end(weight)
-                    if separator:
-                        yield separator
-                        separator = None
-                    if piece_weight != 1:
-                        yield "("
-                    weight = piece_weight
-                elif separator:
-                    yield separator
+                if separator:
+                    self._push(runs, separator, 1)
                     separator = None
-                yield piece_text
+                self._push(runs, piece_text, piece_weight)
 
             # Divide the next tag.
             if tag.pieces[-1][0].endswith("."):
@@ -197,9 +188,30 @@ class _TagListRenderer:
             else:
                 separator = ", "
 
-        # Emit the trailing group.
-        if weight != 1:
-            yield self._get_group_end(weight)
+        return runs
+
+    def _get_weight(self, weight: float):
+        return f"{weight:.4f}".rstrip("0").rstrip(".")
+
+    def _push(self, runs: list, text: str, weight: float):
+        if runs and runs[-1][1] == weight:
+            runs[-1][0] += text
+        else:
+            runs.append([text, weight])
+
+    def _render(self):
+        for text, weight in self._get_runs():
+            core = text.strip()
+
+            # Emit unweighted or blank runs verbatim.
+            if weight == 1 or not core:
+                yield text
+                continue
+
+            # Keep separating whitespace outside the group delimiters.
+            lead = text[: len(text) - len(text.lstrip())]
+            trail = text[len(text.rstrip()) :]
+            yield f"{lead}({core}{self._get_group_end(weight)}{trail}"
 
 
 class Tag:
